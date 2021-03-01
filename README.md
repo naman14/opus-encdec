@@ -1,12 +1,14 @@
-# Opus & Wave Recorder
+# Opus Encoder & Decoder
 
-A javascript library to encode the output of Web Audio API nodes in Ogg Opus or WAV format using WebAssembly.
+A javascript library to encode and decode Opus (with/without Ogg container) using WebAssembly.
+
+> forked & modified from [chris-rudmin/opus-recorder](https://github.com/chris-rudmin/opus-recorder/commit/0aaecb06e5880b3688363a90d2725008905b23ae) _(version 8.0.3)_
 
 
 #### Libraries Used
 
-- Libopus: v1.3.1 compiled with emscripten 1.39.14
-- speexDSP: 1.2.0 compiled with emscripten 1.39.14
+- Libopus: v1.3.1 compiled with emscripten 2.0.14
+- speexDSP: 1.2.0 compiled with emscripten 2.0.14
 
 #### Required Files
 
@@ -187,8 +189,8 @@ module.exports = {
 
 Then get the encoderPath using an import
 ```js
-import Recorder from 'opus-recorder';
-import encoderPath from 'opus-recorder/dist/encoderWorker.min.js';
+import Recorder from 'opus-encdec';
+import encoderPath from 'opus-encdec/dist/encoderWorker.min.js';
 
 const rec = new Recorder({ encoderPath });
 ```
