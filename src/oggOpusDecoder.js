@@ -21,6 +21,14 @@ var OggOpusDecoder = function( config, Module ){
     resampleQuality: 3, // Value between 0 and 10 inclusive. 10 being highest quality.
   }, config );
 
+  // encode "raw" opus stream?
+  // -> either config.rawOpus = true/false,
+  //    or config.mimeType = 'audio/opus'
+  //   (instead of 'audio/ogg; codecs=opus')
+  this.rawOpus = typeof this.config.rawOpus === 'boolean'?
+                  this.config.rawOpus :
+                  /^audio\/opus\b/i.test(this.config.mimeType);
+
   this._opus_decoder_create = Module._opus_decoder_create;
   this._opus_decoder_destroy = Module._opus_decoder_destroy;
   this._speex_resampler_process_interleaved_float = Module._speex_resampler_process_interleaved_float;
@@ -34,6 +42,11 @@ var OggOpusDecoder = function( config, Module ){
   this.HEAPF32 = Module.HEAPF32;
 
   this.outputBuffers = [];
+
+  if(this.config.numberOfChannels > 0){
+    this.numberOfChannels = this.config.numberOfChannels;
+    this.init();
+  }
 };
 
 
@@ -77,6 +90,117 @@ OggOpusDecoder.prototype.decode = function( typedArray ) {
     }
   }, this );
 };
+
+OggOpusDecoder.prototype.decodeRawPacket = function( typedArray ) {
+
+  var dataLength = typedArray.length * typedArray.BYTES_PER_ELEMENT;
+  if(dataLength === 0){
+    return;
+  }
+
+  var dataOffset=0;
+  if ( typeof this.numberOfChannels === 'undefined' ) {
+
+    // this.numberOfChannels = typedArray[0] & 0x04 ? 2 : 1;
+
+    var headerLength = this.decodeHeader(typedArray);
+    this.init();
+
+    if ( headerLength > 0 ) {
+      if ( headerLength >= dataLength ) {
+        return;
+      }
+      dataOffset += headerLength;
+    }
+  }
+
+  while ( dataOffset < dataLength ) {
+    var packetLength = Math.min( dataLength - dataOffset, this.decoderBufferMaxLength );
+    // this.decoderBuffer.set( typedArray );
+    this.decoderBuffer.set( typedArray.subarray( dataOffset, dataOffset += packetLength ), this.decoderBufferIndex );
+    this.decoderBufferIndex += packetLength;
+
+    // Decode raw opus packet
+    var outputSampleLength = this._opus_decode_float( this.decoder, this.decoderBufferPointer, typedArray.length, this.decoderOutputPointer, this.decoderOutputMaxLength, 0);
+    var resampledLength = Math.ceil( outputSampleLength * this.config.outputBufferSampleRate / this.config.decoderSampleRate );
+    this.HEAP32[ this.decoderOutputLengthPointer >> 2 ] = outputSampleLength;
+    this.HEAP32[ this.resampleOutputLengthPointer >> 2 ] = resampledLength;
+    this._speex_resampler_process_interleaved_float( this.resampler, this.decoderOutputPointer, this.decoderOutputLengthPointer, this.resampleOutputBufferPointer, this.resampleOutputLengthPointer );
+    this.sendToOutputBuffers( this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
+    this.decoderBufferIndex = 0;
+  }
+
+  return;
+}
+
+OggOpusDecoder.prototype.decodeHeader = function( typedArray ) {
+
+  var invalid = false;
+  var segmentDataView = new DataView( typedArray.buffer );
+  invalid = invalid || (segmentDataView.getUint32( 0, true ) !== 1937076303); // Magic Signature 'Opus'
+  invalid = invalid || (segmentDataView.getUint32( 4, true ) !== 1684104520); // Magic Signature 'Head'
+  invalid = invalid || (segmentDataView.getUint8(  8 ) !== 1); // Version
+
+  if(invalid){
+    return false;
+  }
+  this.numberOfChannels = segmentDataView.getUint8( 9 ); // Channel count
+  invalid = invalid || (!isFinite(this.numberOfChannels) || this.numberOfChannels < 0 || this.numberOfChannels > 2);
+
+  if(invalid){
+    this.numberOfChannels = undefined;
+    return false;
+  }
+  var sampleRate = segmentDataView.getUint32( 12, true ); // sample rate
+  invalid = invalid || (!isFinite(sampleRate) || sampleRate < 0 || !this.config);
+
+  if(invalid){
+    return false;
+  }
+  this.config.decoderSampleRate = sampleRate;
+
+  var headerSize = 19;
+  var channelMapping = segmentDataView.getUint8( 18 ); // channel map 0 = mono or stereo
+  if(channelMapping > 0){
+    var channelCount = segmentDataView.getUint8( 19 ); // channel count (only encoded, if channel map != 0)
+    headerSize += 2 + ( channelCount * 8 ); // additional header length, when channel mapping family is != 0
+  }
+
+  var size = typedArray.length * typedArray.BYTES_PER_ELEMENT;
+  if(size > headerSize){
+    var tagsSize;
+    while(tagsSize = this.calcTags(typedArray, headerSize)){
+      headerSize += tagsSize;
+      if(headerSize >= size){
+        break;
+      }
+    }
+  }
+
+  return headerSize;
+}
+
+OggOpusDecoder.prototype.calcTags = function( typedArray, offset ) {
+
+  var invalid = false;
+  var segmentDataView = new DataView( typedArray.buffer, offset );
+  invalid = invalid || (segmentDataView.getUint32( 0, true ) !== 1937076303); // Magic Signature 'Opus'
+  invalid = invalid || (segmentDataView.getUint32( 4, true ) !== 1936154964); // Magic Signature 'Tags'
+
+  if(invalid){
+    return false;
+  }
+  var vendorLength = segmentDataView.getUint32( 8, true ); // vendor string length
+  var userCommentsListLength = segmentDataView.getUint32( 12 + vendorLength, true ); // size of user comments list
+  var size = 16 + vendorLength;
+  if(userCommentsListLength > 0){
+    for(var i=0; i < userCommentsListLength; ++i){
+      size += 4 + segmentDataView.getUint32( size, true ); // length of user comment string <i>
+    }
+  }
+  // NOTE no final 'framing bit' for OpusTags
+  return size;
+}
 
 OggOpusDecoder.prototype.getPageBoundaries = function( dataView ){
   var pageBoundaries = [];
