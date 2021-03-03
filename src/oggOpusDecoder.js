@@ -15,7 +15,7 @@ var OggOpusDecoder = function( config, Module ){
   }
 
   this.config = Object.assign({
-    bufferLength: 4096, // Define size of outgoing buffer
+    // bufferLength: 4096, // Define size of outgoing buffer
     decoderSampleRate: 48000, // Desired decoder sample rate.
     outputBufferSampleRate: 48000, // Desired output sample rate. Audio will be resampled
     resampleQuality: 3, // Value between 0 and 10 inclusive. 10 being highest quality.
@@ -41,7 +41,12 @@ var OggOpusDecoder = function( config, Module ){
   this.HEAP32 = Module.HEAP32;
   this.HEAPF32 = Module.HEAPF32;
 
-  this.outputBuffers = [];
+  // this.outputBuffers = [];
+  this.decodedBuffers = [];
+
+  if(this.config.onInit){
+    this.oninit = this.config.onInit;
+  }
 
   if(this.config.numberOfChannels > 0){
     this.numberOfChannels = this.config.numberOfChannels;
@@ -50,7 +55,8 @@ var OggOpusDecoder = function( config, Module ){
 };
 
 
-OggOpusDecoder.prototype.decode = function( typedArray ) {
+OggOpusDecoder.prototype.decode = function( typedArray, onDecoded ) {
+  onDecoded = onDecoded || this.handleDecoded;
   var dataView = new DataView( typedArray.buffer );
   this.getPageBoundaries( dataView ).map( function( pageStart ) {
     var headerType = dataView.getUint8( pageStart + 5, true );
@@ -78,7 +84,8 @@ OggOpusDecoder.prototype.decode = function( typedArray ) {
           this.HEAP32[ this.decoderOutputLengthPointer >> 2 ] = outputSampleLength;
           this.HEAP32[ this.resampleOutputLengthPointer >> 2 ] = resampledLength;
           this._speex_resampler_process_interleaved_float( this.resampler, this.decoderOutputPointer, this.decoderOutputLengthPointer, this.resampleOutputBufferPointer, this.resampleOutputLengthPointer );
-          this.sendToOutputBuffers( this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
+          // this.sendToOutputBuffers( this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
+          onDecoded.call(this, this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
           this.decoderBufferIndex = 0;
         }
       }
@@ -91,8 +98,9 @@ OggOpusDecoder.prototype.decode = function( typedArray ) {
   }, this );
 };
 
-OggOpusDecoder.prototype.decodeRawPacket = function( typedArray ) {
+OggOpusDecoder.prototype.decodeRawPacket = function( typedArray, onDecoded ) {
 
+  onDecoded = onDecoded || this.handleDecoded;
   var dataLength = typedArray.length * typedArray.BYTES_PER_ELEMENT;
   if(dataLength === 0){
     return;
@@ -126,12 +134,17 @@ OggOpusDecoder.prototype.decodeRawPacket = function( typedArray ) {
     this.HEAP32[ this.decoderOutputLengthPointer >> 2 ] = outputSampleLength;
     this.HEAP32[ this.resampleOutputLengthPointer >> 2 ] = resampledLength;
     this._speex_resampler_process_interleaved_float( this.resampler, this.decoderOutputPointer, this.decoderOutputLengthPointer, this.resampleOutputBufferPointer, this.resampleOutputLengthPointer );
-    this.sendToOutputBuffers( this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
+    // this.sendToOutputBuffers( this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
+    onDecoded.call(this, this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ) );
     this.decoderBufferIndex = 0;
   }
 
   return;
 }
+
+OggOpusDecoder.prototype.handleDecoded = function( typedArray ) {
+  this.decodedBuffers.push( typedArray );
+};
 
 OggOpusDecoder.prototype.decodeHeader = function( typedArray ) {
 
@@ -198,7 +211,8 @@ OggOpusDecoder.prototype.calcTags = function( typedArray, offset ) {
       size += 4 + segmentDataView.getUint32( size, true ); // length of user comment string <i>
     }
   }
-  // NOTE no final 'framing bit' for OpusTags
+  // NOTE in difference to Vorbis Comments, no final 'framing bit' for OpusTags
+
   return size;
 }
 
@@ -215,9 +229,11 @@ OggOpusDecoder.prototype.getPageBoundaries = function( dataView ){
 };
 
 OggOpusDecoder.prototype.init = function(){
-  this.resetOutputBuffers();
   this.initCodec();
   this.initResampler();
+  if(this.oninit){
+    this.oninit();
+  }
 };
 
 OggOpusDecoder.prototype.initCodec = function() {
@@ -258,50 +274,4 @@ OggOpusDecoder.prototype.initResampler = function() {
   this.resampleOutputLengthPointer = this._malloc( 4 );
   this.resampleOutputMaxLength = Math.ceil( this.decoderOutputMaxLength * this.config.outputBufferSampleRate / this.config.decoderSampleRate );
   this.resampleOutputBufferPointer = this._malloc( this.resampleOutputMaxLength * 4 ); // 4 bytes per sample
-};
-
-OggOpusDecoder.prototype.resetOutputBuffers = function(){
-  this.outputBuffers = [];
-  this.outputBufferArrayBuffers = [];
-  this.outputBufferIndex = 0;
-
-  for ( var i = 0; i < this.numberOfChannels; i++ ) {
-    this.outputBuffers.push( new Float32Array( this.config.bufferLength ) );
-    this.outputBufferArrayBuffers.push( this.outputBuffers[i].buffer );
-  }
-};
-
-OggOpusDecoder.prototype.sendLastBuffer = function(){
-  this.sendToOutputBuffers( new Float32Array( ( this.config.bufferLength - this.outputBufferIndex ) * this.numberOfChannels ) );
-  global['postMessage'](null);
-};
-
-OggOpusDecoder.prototype.sendToOutputBuffers = function( mergedBuffers ){
-  var dataIndex = 0;
-  var mergedBufferLength = mergedBuffers.length / this.numberOfChannels;
-
-  while ( dataIndex < mergedBufferLength ) {
-    var amountToCopy = Math.min( mergedBufferLength - dataIndex, this.config.bufferLength - this.outputBufferIndex );
-
-    if (this.numberOfChannels === 1) {
-      this.outputBuffers[0].set( mergedBuffers.subarray( dataIndex, dataIndex + amountToCopy ), this.outputBufferIndex );
-    }
-
-    // Deinterleave
-    else {
-      for ( var i = 0; i < amountToCopy; i++ ) {
-        this.outputBuffers.forEach( function( buffer, channelIndex ) {
-          buffer[ this.outputBufferIndex + i ] = mergedBuffers[ ( dataIndex + i ) * this.numberOfChannels + channelIndex ];
-        }, this);
-      }
-    }
-
-    dataIndex += amountToCopy;
-    this.outputBufferIndex += amountToCopy;
-
-    if ( this.outputBufferIndex == this.config.bufferLength ) {
-      global['postMessage']( this.outputBuffers, this.outputBufferArrayBuffers );
-      this.resetOutputBuffers();
-    }
-  }
 };
