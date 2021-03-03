@@ -4,6 +4,14 @@ A javascript library to encode and decode Opus (with/without Ogg container) usin
 
 > forked & modified from [chris-rudmin/opus-recorder](https://github.com/chris-rudmin/opus-recorder/commit/0aaecb06e5880b3688363a90d2725008905b23ae) _(version 8.0.3)_
 
+Main differences to [chris-rudmin/opus-recorder](https://github.com/chris-rudmin/opus-recorder):
+ * provides the OPUS libraries and helper (for encoding/decoding) as separate files/modules
+ * provides encoder option `rawOpus` (`boolean`): encode as _raw_ OPUS frames (instead of OGG container)
+ * provides 4 file variats per library (encoder/decoder) in `dist/`:
+   * single-file JavaScript (`*.js`)
+   * minfied JavaScript (`*.min.js` + `*.min.mem`)
+   * JavaScript + WASM (`*.wasm.js` + `*.wasm.wasm`)
+   * minified JavaScript + WASM (`*.wasm.min.js` + `*.wasm.min.wasm`)
 
 #### Libraries Used
 
@@ -12,11 +20,87 @@ A javascript library to encode and decode Opus (with/without Ogg container) usin
 
 #### Required Files
 
-The required files are in the `dist` folder. Unminified sources are in `dist-unminified`.
-Examples for recording, encoding, and decoding are in `examples` folder.
+The required files are in the `dist` folder:
+
+##### OPUS library files (encoder/decoder)
+
+ * development version:
+   * pure JavaScript:  
+     `libopus-[encoder | decoder].js`
+   * WASM:  
+     `libopus-[encoder | decoder].wasm.js`  
+     `libopus-[encoder | decoder].wasm.wasm` _(binary file)_
+ * minified version:
+   * pure JavaScript:  
+     `libopus-[encoder | decoder].min.js`  
+     `libopus-[encoder | decoder].min.mem` _(binary file)_
+   * WASM:  
+     `libopus-[encoder | decoder].wasm.min.js`
+     `libopus-[encoder | decoder].wasm.min.wasm` _(binary file)_
 
 ---------
-### Usage
+
+#### Including Dynamically Loaded libopus-encoder.js from Non-Default Location
+
+Variants of the `libopus-encoder.js` library that are loaded asynchronously do usually also load some additional files.
+
+If the library-file is not loaded from the default location ("page root"), but from a sub-directory/-path, you need to
+let the library know, so that it searches for the additional files, that it needs to load, in that sub-directory/-path.
+
+For this, the path/location must be stored in the global variable `OPUS_SCRIPT_LOCATION` *before* the `libopus-encoder.js`
+library is loaded.
+If `OPUS_SCRIPT_LOCATION` is given as `string`, it specifies the path to the `libopus-encoder.js` files (see examples below), e.g.
+```javascript
+//location example as string:
+OPUS_SCRIPT_LOCATION = 'libs/';
+```
+Note, that the path/location should end with a slash (`"/"`), e.g. `'some/path/'`
+_(however, the library will try to automatically add a slash, if it is missing)_.
+
+If `OPUS_SCRIPT_LOCATION` is given as an object, it specifies mappings of the file-names to the file-paths of the `libopus-encoder.js` files (see examples below), e.g.
+```javascript
+//location example as object/mapping:
+OPUS_SCRIPT_LOCATION = {
+  'libopus-encoder.min.js.mem': 'libs/flac.mem'
+};
+```
+
+An example for specifying the path/location at `libs/` in an HTML file:
+```html
+  <script type="text/javascript">window.OPUS_SCRIPT_LOCATION = 'libs/';</script>
+  <script src="libs/libopus-encoder.js" type="text/javascript"></script>
+```
+
+Or example for specifying the path/location at `libs/` in a WebWorker script:
+```javascript
+  self.OPUS_SCRIPT_LOCATION = 'libs/';
+  importScripts('libs/libopus-encoder.js');
+```
+
+Or example for specifying the path/location at `libs/` in Node.js script:
+```javascript
+  process.env.OPUS_SCRIPT_LOCATION = './libs/';
+  var Flac = require('./libs/libopus-encoder.js');
+```
+
+Example for specifying custom path and file-name via mapping (`originalFileName -> <newPath/newFileName>`):  
+in this case, the file-name(s) of the additionally required files (e.g. `*.mem` or `.wasm` files)
+need to be mapped to the custom path/file-name(s), that is,
+for all the required files of the used library variant (see details below).
+```javascript
+  self.OPUS_SCRIPT_LOCATION = {
+    'libopus-encoder.min.js.mem': 'libs/flac.mem'
+    // or for wasm:
+    //'libopus-encoder.wasm.wasm': 'libs/flac.wasm'
+  };
+  importScripts('libs/flac.min.js');
+  // or for wasm:
+  // importScripts('libs/flac.wasm.js');
+```
+
+---------
+
+### Usage `recorder.js`
 
 
 #### Constructor
@@ -55,6 +139,8 @@ Creates a recorder instance.
 - **originalSampleRateOverride**  - (*optional*) Override the ogg opus 'input sample rate' field. Google Speech API requires this field to be `16000`.
 - **resampleQuality**             - (*optional*) Value between 0 and 10 which determines latency and processing for resampling. `0` is fastest with lowest quality. `10` is slowest with highest quality. Defaults to `3`.
 - **streamPages**                 - (*optional*) `dataAvailable` event will fire after each encoded page. Defaults to `false`.
+- **rawOpus**                     - (*optional*) `rawOpus` encode as _raw_ OPUS (instead of OGG container) frames. Defaults to `false`.
+
 
 
 #### Config options for WAV recorder
