@@ -118,7 +118,7 @@ OggOpusDecoder.prototype.decodeRaw = function( typedArray, onDecoded, userData )
 
     // this.numberOfChannels = typedArray[0] & 0x04 ? 2 : 1;
 
-    var headerLength = this.decodeHeader( typedArray );
+    var headerLength = this.decodeHeader( typedArray, this.config.readTags );
     this.init();
 
     if ( headerLength > 0 ) {
@@ -156,7 +156,7 @@ OggOpusDecoder.prototype.handleDecoded = function( typedArray ) {
   this.decodedBuffers.push( typedArray );
 };
 
-OggOpusDecoder.prototype.decodeHeader = function( typedArray ) {
+OggOpusDecoder.prototype.decodeHeader = function( typedArray, readTags ) {
 
   var invalid = false;
   var segmentDataView = new DataView( typedArray.buffer );
@@ -192,7 +192,7 @@ OggOpusDecoder.prototype.decodeHeader = function( typedArray ) {
   var size = typedArray.length * typedArray.BYTES_PER_ELEMENT;
   if(size > headerSize){
     var tagsSize;
-    while(tagsSize = this.calcTags(typedArray, headerSize)){
+    while(tagsSize = this.decodeTags(typedArray, headerSize, readTags)){
       headerSize += tagsSize;
       if(headerSize >= size){
         break;
@@ -203,9 +203,11 @@ OggOpusDecoder.prototype.decodeHeader = function( typedArray ) {
   return headerSize;
 }
 
-OggOpusDecoder.prototype.calcTags = function( typedArray, offset ) {
+OggOpusDecoder.prototype.decodeTags = function( typedArray, offset, readTags ) {
 
+  offset = offset || 0;
   var invalid = false;
+  var tag = readTags? {vendor: null, userComments: []} : null;
   var segmentDataView = new DataView( typedArray.buffer, offset );
   invalid = invalid || (segmentDataView.getUint32( 0, true ) !== 1937076303); // Magic Signature 'Opus'
   invalid = invalid || (segmentDataView.getUint32( 4, true ) !== 1936154964); // Magic Signature 'Tags'
@@ -214,15 +216,30 @@ OggOpusDecoder.prototype.calcTags = function( typedArray, offset ) {
     return false;
   }
   var vendorLength = segmentDataView.getUint32( 8, true ); // vendor string length
+  if(tag){
+    tag.vendor = new Uint8Array(segmentDataView, 12, vendorLength);
+  }
   var userCommentsListLength = segmentDataView.getUint32( 12 + vendorLength, true ); // size of user comments list
   var size = 16 + vendorLength;
   if(userCommentsListLength > 0){
+    var length;
     for(var i=0; i < userCommentsListLength; ++i){
-      size += 4 + segmentDataView.getUint32( size, true ); // length of user comment string <i>
+      length = segmentDataView.getUint32( size, true ); // length of user comment string <i>
+      if(tag){
+        tag.userComments.push(new Uint8Array(segmentDataView, size + 4, length));
+      }
+      size += 4 + length;
     }
   }
   // NOTE in difference to Vorbis Comments, no final 'framing bit' for OpusTags
 
+  if(tag){
+    if(!this.tags){
+      this.tags = [ tag ];
+    } else {
+      this.tags.push(tag);
+    }
+  }
   return size;
 }
 
