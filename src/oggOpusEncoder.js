@@ -355,3 +355,9 @@ OggOpusEncoder.prototype.segmentPacket = function( packetLength ) {
 
   return exportPages;
 };
+
+if(typeof exports !== 'undefined'){
+  exports.OggOpusEncoder = OggOpusEncoder;
+} else if(typeof module === 'object' && module && module.exports){
+  module.exports.OggOpusEncoder = OggOpusEncoder;
+}
