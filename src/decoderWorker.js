@@ -3,11 +3,13 @@
 var OggOpusDecoder, OpusDecoderLib;
 if(typeof require === 'function'){
   OpusDecoderLib = require('./libopus-decoder.js');
-  OggOpusDecoder = require('./oggOpusDecoder.js');
+  OggOpusDecoder = require('./oggOpusDecoder.js').OggOpusDecoder;
 } else {
   importScripts('./libopus-decoder.js');
   importScripts('./oggOpusDecoder.js');
 }
+
+var global = global || (typeof window !== 'undefined'? window : typeof self !== 'undefined'? self : this);
 
 var decoder, cached;
 
@@ -67,6 +69,10 @@ global['onmessage'] = function( e ){
 
 OggOpusDecoder.prototype.oninit = function(){
   this.resetOutputBuffers();
+};
+
+OggOpusDecoder.prototype.oncomplete = function(){
+  this.sendLastBuffer();
 };
 
 OggOpusDecoder.prototype.resetOutputBuffers = function(){
