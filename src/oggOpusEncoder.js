@@ -81,16 +81,21 @@ OggOpusEncoder.prototype.encode = function( buffers ) {
   var samples = this.interleave( buffers );
   var sampleIndex = 0;
   var exportPages = useOgg? [] : null;
+  var bufferLength = this.resampler? this.resampleBufferLength : this.encoderBufferLength;
+  var buffer = this.resampler? this.resampleBuffer : this.encoderBuffer;
 
   while ( sampleIndex < samples.length ) {
 
-    var lengthToCopy = Math.min( this.resampleBufferLength - this.resampleBufferIndex, samples.length - sampleIndex );
-    this.resampleBuffer.set( samples.subarray( sampleIndex, sampleIndex+lengthToCopy ), this.resampleBufferIndex );
+    var lengthToCopy = Math.min(bufferLength  - this.sampleBufferIndex, samples.length - sampleIndex );
+    buffer.set( samples.subarray( sampleIndex, sampleIndex+lengthToCopy ), this.sampleBufferIndex );
     sampleIndex += lengthToCopy;
-    this.resampleBufferIndex += lengthToCopy;
+    this.sampleBufferIndex += lengthToCopy;
 
-    if ( this.resampleBufferIndex === this.resampleBufferLength ) {
-      this._speex_resampler_process_interleaved_float( this.resampler, this.resampleBufferPointer, this.resampleSamplesPerChannelPointer, this.encoderBufferPointer, this.encoderSamplesPerChannelPointer );
+    if ( this.sampleBufferIndex === bufferLength ) {
+
+      if (this.resampler) {
+        this._speex_resampler_process_interleaved_float( this.resampler, this.resampleBufferPointer, this.resampleSamplesPerChannelPointer, this.encoderBufferPointer, this.encoderSamplesPerChannelPointer );
+      }
       var packetLength = this._opus_encode_float( this.encoder, this.encoderBufferPointer, this.encoderSamplesPerChannel, this.encoderOutputPointer, this.encoderOutputMaxLength );
 
       if(useOgg){
@@ -104,7 +109,7 @@ OggOpusEncoder.prototype.encode = function( buffers ) {
         this.encodedData.push( new Uint8Array(this.encoderOutputBuffer.subarray(0, packetLength)) );
         this.encodedDataLength += packetLength;
       }
-      this.resampleBufferIndex = 0;
+      this.sampleBufferIndex = 0;
     }
   }
 
@@ -119,14 +124,16 @@ OggOpusEncoder.prototype.destroy = function() {
     delete this.encoderBufferPointer;
     this._free(this.encoderOutputPointer);
     delete this.encoderOutputPointer;
-    this._free(this.resampleSamplesPerChannelPointer);
-    delete this.resampleSamplesPerChannelPointer;
-    this._free(this.resampleBufferPointer);
-    delete this.resampleBufferPointer;
-    this._speex_resampler_destroy(this.resampler);
-    delete this.resampler;
     this._opus_encoder_destroy(this.encoder);
     delete this.encoder;
+    if(this.resampler){
+      this._free(this.resampleSamplesPerChannelPointer);
+      delete this.resampleSamplesPerChannelPointer;
+      this._free(this.resampleBufferPointer);
+      delete this.resampleBufferPointer;
+      this._speex_resampler_destroy(this.resampler);
+      delete this.resampler;
+    }
     if(this.encodedData){
       this.encodedData = null;
     }
@@ -139,7 +146,7 @@ OggOpusEncoder.prototype.flush = function() {
     exportPage = this.generatePage();
   }
   // discard any pending data in resample buffer (only a few ms worth)
-  this.resampleBufferIndex = 0;
+  this.sampleBufferIndex = 0;
   return exportPage;
 };
 
@@ -148,8 +155,8 @@ OggOpusEncoder.prototype.encodeFinalFrame = function() {
   var exportPages = useOgg? [] : null;
 
   // Encode the data remaining in the resample buffer.
-  if ( this.resampleBufferIndex > 0 ) {
-    var dataToFill = (this.resampleBufferLength - this.resampleBufferIndex) / this.config.numberOfChannels;
+  if ( this.sampleBufferIndex > 0 ) {
+    var dataToFill = (this.resampleBufferLength - this.sampleBufferIndex) / this.config.numberOfChannels;
     var numBuffers = Math.ceil(dataToFill / this.bufferLength);
 
     for ( var i = 0; i < numBuffers; i++ ) {
@@ -294,6 +301,7 @@ OggOpusEncoder.prototype.initCodec = function() {
   this.encoderSamplesPerChannelPointer = this._malloc( 4 );
   this.HEAP32[ this.encoderSamplesPerChannelPointer >> 2 ] = this.encoderSamplesPerChannel;
 
+  this.sampleBufferIndex = 0;
   this.encoderBufferLength = this.encoderSamplesPerChannel * this.config.numberOfChannels;
   this.encoderBufferPointer = this._malloc( this.encoderBufferLength * 4 ); // 4 bytes per sample
   this.encoderBuffer = this.HEAPF32.subarray( this.encoderBufferPointer >> 2, (this.encoderBufferPointer >> 2) + this.encoderBufferLength );
@@ -304,11 +312,15 @@ OggOpusEncoder.prototype.initCodec = function() {
 };
 
 OggOpusEncoder.prototype.initResampler = function() {
+  if ( this.config.originalSampleRate === this.config.encoderSampleRate ) {
+    this.resampler = null;
+    return;
+  }
+
   var errLocation = this._malloc( 4 );
   this.resampler = this._speex_resampler_init( this.config.numberOfChannels, this.config.originalSampleRate, this.config.encoderSampleRate, this.config.resampleQuality, errLocation );
   this._free( errLocation );
 
-  this.resampleBufferIndex = 0;
   this.resampleSamplesPerChannel = this.config.originalSampleRate * this.config.encoderFrameSize / 1000;
   this.resampleSamplesPerChannelPointer = this._malloc( 4 );
   this.HEAP32[ this.resampleSamplesPerChannelPointer >> 2 ] = this.resampleSamplesPerChannel;

@@ -137,11 +137,17 @@ OggOpusDecoder.prototype.decodeRaw = function( typedArray, onDecoded, userData )
 
     // Decode raw opus packet
     var outputSampleLength = this._opus_decode_float( this.decoder, this.decoderBufferPointer, typedArray.length, this.decoderOutputPointer, this.decoderOutputMaxLength, 0);
-    var resampledLength = Math.ceil( outputSampleLength * this.config.outputBufferSampleRate / this.config.decoderSampleRate );
-    this.HEAP32[ this.decoderOutputLengthPointer >> 2 ] = outputSampleLength;
-    this.HEAP32[ this.resampleOutputLengthPointer >> 2 ] = resampledLength;
-    this._speex_resampler_process_interleaved_float( this.resampler, this.decoderOutputPointer, this.decoderOutputLengthPointer, this.resampleOutputBufferPointer, this.resampleOutputLengthPointer );
-    onDecoded.call(this, this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels ), userData );
+    var output;
+    if ( this.resampler ) {
+      var resampledLength = Math.ceil( outputSampleLength * this.config.outputBufferSampleRate / this.config.decoderSampleRate );
+      this.HEAP32[ this.decoderOutputLengthPointer >> 2 ] = outputSampleLength;
+      this.HEAP32[ this.resampleOutputLengthPointer >> 2 ] = resampledLength;
+      this._speex_resampler_process_interleaved_float( this.resampler, this.decoderOutputPointer, this.decoderOutputLengthPointer, this.resampleOutputBufferPointer, this.resampleOutputLengthPointer );
+      output = this.HEAPF32.subarray( this.resampleOutputBufferPointer >> 2, (this.resampleOutputBufferPointer >> 2) + resampledLength * this.numberOfChannels );
+    } else {
+      output = this.HEAPF32.subarray( this.decoderOutputPointer >> 2, (this.decoderOutputPointer >> 2) + outputSampleLength * this.numberOfChannels );
+    }
+    onDecoded.call(this, output, userData );
     this.decoderBufferIndex = 0;
   }
 
@@ -292,6 +298,11 @@ OggOpusDecoder.prototype.initResampler = function() {
     this._speex_resampler_destroy( this.resampler );
     this._free( this.resampleOutputLengthPointer );
     this._free( this.resampleOutputBufferPointer );
+  }
+
+  if ( this.config.decoderSampleRate === this.config.outputBufferSampleRate ) {
+    this.resampler = null;
+    return;
   }
 
   var errLocation = this._malloc( 4 );
