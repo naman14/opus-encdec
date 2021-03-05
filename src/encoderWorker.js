@@ -3,7 +3,7 @@
 var OggOpusEncoder, OpusEncoderLib;
 if(typeof require === 'function'){
   OpusEncoderLib = require('./libopus-encoder.js');
-  OggOpusEncoder = require('./oggOpusEncoder.js');
+  OggOpusEncoder = require('./oggOpusEncoder.js').OggOpusEncoder;
 } else {
   importScripts('./libopus-encoder.js');
   importScripts('./oggOpusEncoder.js');
