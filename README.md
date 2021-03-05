@@ -1,4 +1,4 @@
-# Opus Encoder & Decoder
+# Opus JS Encoder / Decoder
 
 A javascript library to encode and decode Opus (with/without Ogg container) using WebAssembly.
 

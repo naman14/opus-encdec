@@ -1,4 +1,4 @@
-## Opus Recorder License (MIT)
+## Opus JS Encoder / Decoder License (MIT)
 
 Original Work Copyright © 2013 Matt Diamond
 

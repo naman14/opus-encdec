@@ -1,9 +1,9 @@
 {
   "name": "opus-encdec",
-  "version": "8.0.3",
-  "description": "A library for encoding and decoding OPUS audio",
+  "version": "1.0.0",
+  "description": "A JavaScript library for encoding and decoding OPUS audio",
   "homepage": "https://github.com/mmig/opus-encdec",
-  "author": "Chris Rudmin",
+  "author": "russaa",
   "keywords": [
     "ogg",
     "opus",
