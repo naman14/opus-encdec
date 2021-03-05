@@ -131,7 +131,6 @@ OggOpusDecoder.prototype.decodeRaw = function( typedArray, onDecoded, userData )
 
   while ( dataOffset < dataLength ) {
     var packetLength = Math.min( dataLength - dataOffset, this.decoderBufferMaxLength );
-    // this.decoderBuffer.set( typedArray );
     this.decoderBuffer.set( typedArray.subarray( dataOffset, dataOffset += packetLength ), this.decoderBufferIndex );
     this.decoderBufferIndex += packetLength;
 
@@ -271,12 +270,7 @@ OggOpusDecoder.prototype.init = function(){
 
 OggOpusDecoder.prototype.initCodec = function() {
 
-  if ( this.decoder ) {
-    this._opus_decoder_destroy( this.decoder );
-    this._free( this.decoderBufferPointer );
-    this._free( this.decoderOutputLengthPointer );
-    this._free( this.decoderOutputPointer );
-  }
+  this.destroyDecoder();
 
   var errReference = this._malloc( 4 );
   this.decoder = this._opus_decoder_create( this.config.decoderSampleRate, this.numberOfChannels, errReference );
@@ -294,11 +288,7 @@ OggOpusDecoder.prototype.initCodec = function() {
 
 OggOpusDecoder.prototype.initResampler = function() {
 
-  if ( this.resampler ) {
-    this._speex_resampler_destroy( this.resampler );
-    this._free( this.resampleOutputLengthPointer );
-    this._free( this.resampleOutputBufferPointer );
-  }
+  this.destroyResampler();
 
   if ( this.config.decoderSampleRate === this.config.outputBufferSampleRate ) {
     this.resampler = null;
@@ -312,6 +302,30 @@ OggOpusDecoder.prototype.initResampler = function() {
   this.resampleOutputLengthPointer = this._malloc( 4 );
   this.resampleOutputMaxLength = Math.ceil( this.decoderOutputMaxLength * this.config.outputBufferSampleRate / this.config.decoderSampleRate );
   this.resampleOutputBufferPointer = this._malloc( this.resampleOutputMaxLength * 4 ); // 4 bytes per sample
+};
+
+OggOpusDecoder.prototype.destroyDecoder = function() {
+  if ( this.decoder ) {
+    this._opus_decoder_destroy( this.decoder );
+    this._free( this.decoderBufferPointer );
+    this._free( this.decoderOutputLengthPointer );
+    this._free( this.decoderOutputPointer );
+  }
+};
+
+OggOpusDecoder.prototype.destroyResampler = function() {
+  if ( this.resampler ) {
+    this._speex_resampler_destroy( this.resampler );
+    this._free( this.resampleOutputLengthPointer );
+    this._free( this.resampleOutputBufferPointer );
+  }
+};
+
+OggOpusDecoder.prototype.destroy = function() {
+  this.destroyDecoder();
+  this.decoderBuffer = null;
+  this.destroyResampler();
+  this.decodedBuffers = null;
 };
 
 if(typeof exports !== 'undefined'){
