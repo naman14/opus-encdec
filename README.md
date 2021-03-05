@@ -89,13 +89,13 @@ need to be mapped to the custom path/file-name(s), that is,
 for all the required files of the used library variant (see details below).
 ```javascript
   self.OPUS_SCRIPT_LOCATION = {
-    'libopus-encoder.min.js.mem': 'libs/flac.mem'
+    'libopus-encoder.min.js.mem': 'libs/libopus-encoder.mem'
     // or for wasm:
-    //'libopus-encoder.wasm.wasm': 'libs/flac.wasm'
+    //'libopus-encoder.wasm.wasm': 'libs/libopus-encoder.wasm'
   };
-  importScripts('libs/flac.min.js');
+  importScripts('libs/libopus-encoder.min.js');
   // or for wasm:
-  // importScripts('libs/flac.wasm.js');
+  // importScripts('libs/libopus-encoder.wasm.js');
 ```
 
 ---------
