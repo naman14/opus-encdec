@@ -18,7 +18,7 @@
   "license": "MIT",
   "main": "dist/recorder.min.js",
   "files": [
-    "dist/"
+    "dist/", "src/*.js"
   ],
   "repository": {
     "type": "git",
