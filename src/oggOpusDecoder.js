@@ -31,6 +31,7 @@ var OggOpusDecoder = function( config, Module ){
 
   this._opus_decoder_create = Module._opus_decoder_create;
   this._opus_decoder_destroy = Module._opus_decoder_destroy;
+  this._opus_decoder_ctl = Module._opus_decoder_ctl;
   this._speex_resampler_process_interleaved_float = Module._speex_resampler_process_interleaved_float;
   this._speex_resampler_init = Module._speex_resampler_init;
   this._speex_resampler_destroy = Module._speex_resampler_destroy;
@@ -258,6 +259,18 @@ OggOpusDecoder.prototype.getPageBoundaries = function( dataView ){
   }
 
   return pageBoundaries;
+};
+
+OggOpusDecoder.prototype.getPitch = function(){
+  return this.getOpusControl( 4033 );
+};
+
+OggOpusDecoder.prototype.getOpusControl = function( control ){
+  var location = this._malloc( 4 );
+  this._opus_decoder_ctl( this.decoder, control, location );
+  var value = this.HEAP32[ location >> 2 ];
+  this._free( location );
+  return value;
 };
 
 OggOpusDecoder.prototype.init = function(){
