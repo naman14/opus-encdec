@@ -22,6 +22,7 @@ Main differences to [chris-rudmin/opus-recorder](https://github.com/chris-rudmin
 > **TODO**
 >  * test newly supported for `int opus_decoder_ctl ( OpusDecoder * st, OPUS_GET_PITCH( opus_int32 * pitch ) )` (`OPUS_GET_PITCH_REQUEST   4033`) for detecting voice in audio
 >  * compile `recorder.js`, `decoderWorker.js` and `encoderWorker.js` into (single file) minified versions (and wasm-versions)
+>  * compile UMD wrapper for `oggOpusDecoder.js` and `oggOpusEncoder.js` (& minified versions)
 >  * make `examples/` work out-of-the-box again (work-around: copy `recorder.js`, `decoderWorker.js` and `encoderWorker.js` to `dist/` and/or modified `<script src="..."` tags in exmple HTML files)
 
 #### Libraries Used
