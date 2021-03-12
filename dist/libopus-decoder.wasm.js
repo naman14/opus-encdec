@@ -1659,6 +1659,9 @@ var _opus_decoder_create = Module["_opus_decoder_create"] = asm["opus_decoder_cr
 var _opus_decode_float = Module["_opus_decode_float"] = asm["opus_decode_float"]
 
 /** @type {function(...*):?} */
+var _opus_decoder_ctl = Module["_opus_decoder_ctl"] = asm["opus_decoder_ctl"]
+
+/** @type {function(...*):?} */
 var _opus_decoder_destroy = Module["_opus_decoder_destroy"] = asm["opus_decoder_destroy"]
 
 /** @type {function(...*):?} */

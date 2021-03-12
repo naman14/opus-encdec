@@ -14176,6 +14176,150 @@ function comb_filter($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) {
   }
  }
 }
+function opus_decoder_ctl($0, $1, $2) {
+ $0 = $0 | 0;
+ $1 = $1 | 0;
+ $2 = $2 | 0;
+ var $3 = 0, $4 = 0, $5 = 0;
+ $3 = __stack_pointer - 48 | 0;
+ __stack_pointer = $3;
+ $5 = HEAP32[$0 + 4 >> 2];
+ $4 = HEAP32[$0 >> 2];
+ HEAP32[$3 + 44 >> 2] = $2;
+ $4 = $0 + $4 | 0;
+ $2 = -5;
+ label$1 : {
+  label$2 : {
+   switch ($1 - 4009 | 0) {
+   case 0:
+    $2 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $2 + 4;
+    $2 = HEAP32[$2 >> 2];
+    if (!$2) {
+     $2 = -1;
+     break label$1;
+    }
+    HEAP32[$2 >> 2] = HEAP32[$0 + 52 >> 2];
+    $2 = 0;
+    break label$1;
+   case 22:
+    $2 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $2 + 4;
+    $2 = HEAP32[$2 >> 2];
+    if (!$2) {
+     $2 = -1;
+     break label$1;
+    }
+    HEAP32[$2 >> 2] = HEAP32[$0 + 84 >> 2];
+    $2 = 0;
+    break label$1;
+   case 19:
+    HEAP32[$0 + 64 >> 2] = 0;
+    HEAP32[$0 + 68 >> 2] = 0;
+    HEAP32[$0 + 48 >> 2] = 0;
+    HEAP32[$0 + 52 >> 2] = 0;
+    HEAP32[$0 + 80 >> 2] = 0;
+    HEAP32[$0 + 84 >> 2] = 0;
+    HEAP32[$0 + 72 >> 2] = 0;
+    HEAP32[$0 + 76 >> 2] = 0;
+    HEAP32[$0 + 56 >> 2] = 0;
+    HEAP32[$0 + 60 >> 2] = 0;
+    $2 = 0;
+    opus_custom_decoder_ctl($4, 4028, 0);
+    silk_InitDecoder($0 + $5 | 0);
+    HEAP32[$0 + 48 >> 2] = HEAP32[$0 + 8 >> 2];
+    HEAP32[$0 + 64 >> 2] = HEAP32[$0 + 12 >> 2] / 400;
+    break label$1;
+   case 20:
+    $2 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $2 + 4;
+    $2 = HEAP32[$2 >> 2];
+    if (!$2) {
+     $2 = -1;
+     break label$1;
+    }
+    HEAP32[$2 >> 2] = HEAP32[$0 + 12 >> 2];
+    $2 = 0;
+    break label$1;
+   case 24:
+    $2 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $2 + 4;
+    $2 = HEAP32[$2 >> 2];
+    if (!$2) {
+     $2 = -1;
+     break label$1;
+    }
+    if (HEAP32[$0 + 60 >> 2] == 1002) {
+     HEAP32[$3 >> 2] = $2;
+     $2 = opus_custom_decoder_ctl($4, 4033, $3);
+     break label$1;
+    }
+    HEAP32[$2 >> 2] = HEAP32[$0 + 36 >> 2];
+    $2 = 0;
+    break label$1;
+   case 36:
+    $2 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $2 + 4;
+    $2 = HEAP32[$2 >> 2];
+    if (!$2) {
+     $2 = -1;
+     break label$1;
+    }
+    HEAP32[$2 >> 2] = HEAP32[$0 + 40 >> 2];
+    $2 = 0;
+    break label$1;
+   case 25:
+    $1 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $1 + 4;
+    $2 = -1;
+    $1 = HEAP32[$1 >> 2];
+    if ($1 + 32768 >>> 0 > 65535) {
+     break label$1;
+    }
+    HEAP32[$0 + 40 >> 2] = $1;
+    $2 = 0;
+    break label$1;
+   case 30:
+    $2 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $2 + 4;
+    $2 = HEAP32[$2 >> 2];
+    if (!$2) {
+     $2 = -1;
+     break label$1;
+    }
+    HEAP32[$2 >> 2] = HEAP32[$0 + 72 >> 2];
+    $2 = 0;
+    break label$1;
+   case 37:
+    $0 = HEAP32[$3 + 44 >> 2];
+    HEAP32[$3 + 44 >> 2] = $0 + 4;
+    $2 = -1;
+    $0 = HEAP32[$0 >> 2];
+    if ($0 >>> 0 > 1) {
+     break label$1;
+    }
+    HEAP32[$3 + 16 >> 2] = $0;
+    $2 = opus_custom_decoder_ctl($4, 4046, $3 + 16 | 0);
+    break label$1;
+   case 38:
+    break label$2;
+   default:
+    break label$1;
+   }
+  }
+  $0 = HEAP32[$3 + 44 >> 2];
+  HEAP32[$3 + 44 >> 2] = $0 + 4;
+  $0 = HEAP32[$0 >> 2];
+  if (!$0) {
+   $2 = -1;
+   break label$1;
+  }
+  HEAP32[$3 + 32 >> 2] = $0;
+  $2 = opus_custom_decoder_ctl($4, 4047, $3 + 32 | 0);
+ }
+ __stack_pointer = $3 + 48 | 0;
+ return $2 | 0;
+}
 function celt_iir($0, $1, $2, $3, $4, $5, $6) {
  var $7 = 0, $8 = Math_fround(0), $9 = 0, $10 = 0, $11 = 0, $12 = Math_fround(0), $13 = 0, $14 = 0, $15 = Math_fround(0), $16 = 0, $17 = 0, $18 = 0;
  $6 = __stack_pointer - 16 | 0;
@@ -15920,6 +16064,9 @@ function resampler_basic_direct_double($0, $1, $2, $3, $4, $5) {
  HEAP32[$16 >> 2] = $9;
  return $7 | 0;
 }
+
+
+
 function silk_decode_frame($0, $1, $2, $3, $4, $5, $6) {
  var $7 = 0, $8 = 0, $9 = 0;
  $7 = __stack_pointer - 144 | 0;
@@ -17156,9 +17303,6 @@ function resampler_basic_direct_single($0, $1, $2, $3, $4, $5) {
  HEAP32[$11 >> 2] = $8;
  return $7 | 0;
 }
-
-
-
 function ec_laplace_decode($0, $1, $2) {
  var $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0;
  label$1 : {
@@ -19813,6 +19957,7 @@ function __unlockfile($0) {}
   "__wasm_call_ctors": __wasm_call_ctors, 
   "opus_decoder_create": opus_decoder_create, 
   "opus_decode_float": opus_decode_float, 
+  "opus_decoder_ctl": opus_decoder_ctl, 
   "opus_decoder_destroy": opus_decoder_destroy, 
   "speex_resampler_init": speex_resampler_init, 
   "speex_resampler_destroy": speex_resampler_destroy, 
@@ -21087,6 +21232,9 @@ var _opus_decoder_create = Module["_opus_decoder_create"] = asm["opus_decoder_cr
 
 /** @type {function(...*):?} */
 var _opus_decode_float = Module["_opus_decode_float"] = asm["opus_decode_float"]
+
+/** @type {function(...*):?} */
+var _opus_decoder_ctl = Module["_opus_decoder_ctl"] = asm["opus_decoder_ctl"]
 
 /** @type {function(...*):?} */
 var _opus_decoder_destroy = Module["_opus_decoder_destroy"] = asm["opus_decoder_destroy"]
