@@ -16,7 +16,7 @@
     "wasm"
   ],
   "license": "MIT",
-  "main": "dist/recorder.min.js",
+  "main": "src/recorder.js",
   "files": [
     "dist/", "src/*.js"
   ],
