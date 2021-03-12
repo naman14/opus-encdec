@@ -1,6 +1,12 @@
-# Opus JS Encoder / Decoder
+# [Opus JS Encoder / Decoder][0]
 
-A javascript library to encode and decode Opus (with/without Ogg container) using WebAssembly.
+[![npm](https://img.shields.io/npm/v/opus-encdec)](https://www.npmjs.com/package/opus-encdec)
+[![GitHub package.json version](https://img.shields.io/github/package-json/v/mmig/opus-encdec/master)][0]
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/emscripten-core/emscripten?color=green&label=emscripten%40latest)][1]
+[![libopus version](https://img.shields.io/badge/libopus-1.3.1-yellow)][2]
+[![speexDSP version](https://img.shields.io/badge/speexDSP-1.2.0-yellow)][3]
+
+A javascript library to encode and decode Opus (with/without Ogg container) using pure JavaScript and/or WebAssembly.
 
 > forked & modified from [chris-rudmin/opus-recorder](https://github.com/chris-rudmin/opus-recorder/commit/0aaecb06e5880b3688363a90d2725008905b23ae) _(version 8.0.3)_
 
@@ -13,10 +19,16 @@ Main differences to [chris-rudmin/opus-recorder](https://github.com/chris-rudmin
    * JavaScript + WASM (`*.wasm.js` + `*.wasm.wasm`)
    * minified JavaScript + WASM (`*.wasm.min.js` + `*.wasm.min.wasm`)
 
+> **TODO**
+>  * test newly supported for `int opus_decoder_ctl ( OpusDecoder * st, OPUS_GET_PITCH( opus_int32 * pitch ) )` (`OPUS_GET_PITCH_REQUEST   4033`) for detecting voice in audio
+>  * compile `recorder.js`, `decoderWorker.js` and `encoderWorker.js` into (single file) minified versions (and wasm-versions)
+>  * make `examples/` work out-of-the-box again (work-around: copy `recorder.js`, `decoderWorker.js` and `encoderWorker.js` to `dist/` and/or modified `<script src="..."` tags in exmple HTML files)
+
 #### Libraries Used
 
-- Libopus: v1.3.1 compiled with emscripten 2.0.14
-- speexDSP: 1.2.0 compiled with emscripten 2.0.14
+> `emscripten`: v2.0.14 _(compiler)_  
+> `libopus`:    v1.3.1  
+> `speexDSP`:   v1.2.0  
 
 #### Required Files
 
@@ -38,7 +50,25 @@ The required files are in the `dist` folder:
      `libopus-[encoder | decoder].wasm.min.js`
      `libopus-[encoder | decoder].wasm.min.wasm` _(binary file)_
 
+
+**NOTE**: `recorder.js`, as well as the wrapper code `decoderWorker.js` and
+          `encoderWorker.js` are currently only (un-minified) available in
+          directory `src/`
+          (may need to be copied to `dist/` or other appropriate location, if they need to be used)
+
 ---------
+
+#### Installing
+
+Install via `npm` registry
+```bash
+npm install opus-encdec
+```
+
+Latest from repository
+```bash
+npm install git+https://github.com/mmig/opus-encdec.git
+```
 
 #### Including Dynamically Loaded libopus-encoder.js from Non-Default Location
 
@@ -97,6 +127,10 @@ for all the required files of the used library variant (see details below).
   // or for wasm:
   // importScripts('libs/libopus-encoder.wasm.js');
 ```
+
+---------
+
+ _OLD DOCUMENTATION: (caution: may be outdated/obsolete)_
 
 ---------
 
@@ -353,3 +387,7 @@ Clean the dist folder and git submodules:
 make clean
 ```
 
+[0]: https://github.com/mmig/opus-encdec
+[1]: https://github.com/kripken/emscripten
+[2]: https://opus-codec.org/downloads/
+[3]: https://www.speex.org/downloads/
