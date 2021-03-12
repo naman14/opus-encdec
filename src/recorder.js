@@ -40,7 +40,7 @@ Recorder.isRecordingSupported = function(){
   return AudioContext && getUserMediaSupported && global.WebAssembly;
 };
 
-Recorder.version = '8.0.3';
+Recorder.version = '0.1.1';
 
 
 // Instance Methods
@@ -269,7 +269,7 @@ Recorder.prototype.stop = function(){
     this.state = "inactive";
 
     // macOS and iOS requires the source to remain connected (in case stopped while paused)
-    this.recordingGainNode.connect( this.encoderNode ); 
+    this.recordingGainNode.connect( this.encoderNode );
 
     this.monitorGainNode.disconnect();
     this.clearStream();

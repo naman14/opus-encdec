@@ -1,6 +1,6 @@
 {
   "name": "opus-encdec",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A JavaScript library for encoding and decoding OPUS audio",
   "homepage": "https://github.com/mmig/opus-encdec",
   "author": "russaa",
