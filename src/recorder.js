@@ -1,6 +1,6 @@
 "use strict";
 
-var AudioContext = global.AudioContext || global.webkitAudioContext;
+var AudioContext = window.AudioContext || window.webkitAudioContext;
 
 
 // Constructor
@@ -26,7 +26,7 @@ var Recorder = function( config = {} ){
     streamPages: false,
     wavBitDepth: 16,
     sourceNode: { context: null },
-  }, config );
+  }, config);
 
   this.encodedSamplePosition = 0;
   this.initAudioContext();
@@ -36,8 +36,8 @@ var Recorder = function( config = {} ){
 
 // Static Methods
 Recorder.isRecordingSupported = function(){
-  const getUserMediaSupported = global.navigator && global.navigator.mediaDevices && global.navigator.mediaDevices.getUserMedia;
-  return AudioContext && getUserMediaSupported && global.WebAssembly;
+  const getUserMediaSupported = window.navigator && window.navigator.mediaDevices && window.navigator.mediaDevices.getUserMedia;
+  return AudioContext && getUserMediaSupported && window.WebAssembly;
 };
 
 Recorder.version = '0.1.1';
@@ -105,21 +105,21 @@ Recorder.prototype.initAudioContext = function(){
 
 Recorder.prototype.initEncoder = function() {
 
-  if (this.audioContext.audioWorklet) {
+  if (typeof registerProcessor === 'function') {
     this.encoderNode = new AudioWorkletNode(this.audioContext, 'encoder-worklet', { numberOfOutputs: 0 });
     this.encoder = this.encoderNode.port;
   }
 
   else {
-    console.log('audioWorklet support not detected. Falling back to scriptProcessor');
+    console.log('audioWorklet support not detected. Falling back to scriptProcessor.....');
 
     // Skip the first buffer
-    this.encodeBuffers = () => delete this.encodeBuffers;
+    // this.encodeBuffers = () => delete this.encodeBuffers;
 
     this.encoderNode = this.audioContext.createScriptProcessor( this.config.bufferLength, this.config.numberOfChannels, this.config.numberOfChannels );
     this.encoderNode.onaudioprocess = ({ inputBuffer }) => this.encodeBuffers( inputBuffer );
     this.encoderNode.connect( this.audioContext.destination ); // Requires connection to destination to process audio
-    this.encoder = new global.Worker(this.config.encoderPath);
+    this.encoder = new window.Worker(this.config.encoderPath);
   }
 };
 
@@ -129,7 +129,7 @@ Recorder.prototype.initSourceNode = function(){
     return Promise.resolve();
   }
 
-  return global.navigator.mediaDevices.getUserMedia({ audio : this.config.mediaTrackConstraints }).then( stream => {
+  return window.navigator.mediaDevices.getUserMedia({ audio : this.config.mediaTrackConstraints }).then( stream => {
     this.stream = stream;
     this.sourceNode = this.audioContext.createMediaStreamSource( stream );
   });
@@ -141,27 +141,39 @@ Recorder.prototype.initWorker = function(){
   this.recordedPages = [];
   this.totalLength = 0;
 
+  console.log('Returning initWorker promise, streamPages:', this.config.streamPages);
   return new Promise(resolve => {
     var callback = ({ data }) => {
       switch( data['message'] ){
         case 'ready':
+          console.log(`READYYYYYYY`);
           resolve();
           break;
         case 'page':
           this.encodedSamplePosition = data['samplePosition'];
+          console.log(data);
           onPage(data['page']);
           break;
         case 'done':
           this.encoder.removeEventListener( "message", callback );
           this.finish();
           break;
+        default:
+          if (data['page']) {
+            onPage(data['page']);
+          }
       }
     };
+
+    console.log(
+        'Adding event listeners'
+    )
 
     this.encoder.addEventListener( "message", callback );
 
     // must call start for messagePort messages
     if( this.encoder.start ) {
+      console.log(`Starting encoder...`);
       this.encoder.start()
     }
 
@@ -177,7 +189,7 @@ Recorder.prototype.initWorker = function(){
 };
 
 Recorder.prototype.initWorklet = function() {
-  if (this.audioContext.audioWorklet) {
+  if (typeof registerProcessor === 'function') {
     return this.audioContext.audioWorklet.addModule(this.config.encoderPath);
   }
 
@@ -248,6 +260,7 @@ Recorder.prototype.start = function(){
       .then(() => this.initialize)
       .then(() => Promise.all([this.initSourceNode(), this.initWorker()]))
       .then(() => {
+        console.log('Setting state to recording');
         this.state = "recording";
         this.encoder.postMessage({ command: 'getHeaderPages' });
         this.sourceNode.connect( this.monitorGainNode );
@@ -257,6 +270,7 @@ Recorder.prototype.start = function(){
         this.onstart();
       })
       .catch(error => {
+        console.log(`Setting state to inactive`);
         this.state = 'inactive';
         throw error;
       });
@@ -326,4 +340,8 @@ Recorder.prototype.onstart = function(){};
 Recorder.prototype.onstop = function(){};
 
 
-module.exports = Recorder;
+if(typeof exports !== 'undefined'){
+  exports.Recorder = Recorder;
+} else if(typeof module === 'object' && module && module.exports){
+  module.exports.Recorder = Recorder;
+}
