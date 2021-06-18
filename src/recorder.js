@@ -2,6 +2,10 @@
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 
+var getWorkerURL = function(url) {
+  const content = `importScripts("${url}");`;
+  return URL.createObjectURL(new Blob([ content ], { type: "text/javascript" }));
+}
 
 // Constructor
 var Recorder = function( config = {} ){
@@ -15,7 +19,7 @@ var Recorder = function( config = {} ){
     bufferLength: 4096,
     encoderApplication: 2049,
     encoderFrameSize: 20,
-    encoderPath: 'encoderWorker.min.js',
+    encoderPath: 'https://symbl-sdk-cdn-bucket.storage.googleapis.com/js/ga/symbl-opus-encdec/0.1.2/dist/encoderWorker.min.js',
     encoderSampleRate: 48000,
     maxFramesPerPage: 40,
     mediaTrackConstraints: true,
@@ -30,6 +34,7 @@ var Recorder = function( config = {} ){
 
   this.encodedSamplePosition = 0;
   this.initAudioContext();
+  this.encoderWorkerUrl = getWorkerURL(this.config.encoderPath);
   this.initialize = this.initWorklet().then(() => this.initEncoder());
 };
 
@@ -40,7 +45,7 @@ Recorder.isRecordingSupported = function(){
   return AudioContext && getUserMediaSupported && window.WebAssembly;
 };
 
-Recorder.version = '0.1.1';
+Recorder.version = '0.1.2';
 
 
 // Instance Methods
@@ -75,6 +80,8 @@ Recorder.prototype.close = function() {
   if ( !this.config.sourceNode.context ){
     return this.audioContext.close();
   }
+
+  URL.revokeObjectURL(this.encoderWorkerUrl);
 
   return Promise.resolve();
 }
@@ -111,15 +118,13 @@ Recorder.prototype.initEncoder = function() {
   }
 
   else {
-    console.log('audioWorklet support not detected. Falling back to scriptProcessor.....');
-
     // Skip the first buffer
     // this.encodeBuffers = () => delete this.encodeBuffers;
 
     this.encoderNode = this.audioContext.createScriptProcessor( this.config.bufferLength, this.config.numberOfChannels, this.config.numberOfChannels );
     this.encoderNode.onaudioprocess = ({ inputBuffer }) => this.encodeBuffers( inputBuffer );
     this.encoderNode.connect( this.audioContext.destination ); // Requires connection to destination to process audio
-    this.encoder = new window.Worker(this.config.encoderPath);
+    this.encoder = new window.Worker(this.encoderWorkerUrl);
   }
 };
 
@@ -141,17 +146,15 @@ Recorder.prototype.initWorker = function(){
   this.recordedPages = [];
   this.totalLength = 0;
 
-  console.log('Returning initWorker promise, streamPages:', this.config.streamPages);
+//  console.log('Returning initWorker promise, streamPages:', this.config.streamPages);
   return new Promise(resolve => {
     var callback = ({ data }) => {
       switch( data['message'] ){
         case 'ready':
-          console.log(`READYYYYYYY`);
           resolve();
           break;
         case 'page':
           this.encodedSamplePosition = data['samplePosition'];
-          console.log(data);
           onPage(data['page']);
           break;
         case 'done':
@@ -165,15 +168,10 @@ Recorder.prototype.initWorker = function(){
       }
     };
 
-    console.log(
-        'Adding event listeners'
-    )
-
     this.encoder.addEventListener( "message", callback );
 
     // must call start for messagePort messages
     if( this.encoder.start ) {
-      console.log(`Starting encoder...`);
       this.encoder.start()
     }
 
@@ -190,7 +188,7 @@ Recorder.prototype.initWorker = function(){
 
 Recorder.prototype.initWorklet = function() {
   if (typeof registerProcessor === 'function') {
-    return this.audioContext.audioWorklet.addModule(this.config.encoderPath);
+    return this.audioContext.audioWorklet.addModule(this.encoderWorkerUrl);
   }
 
   return Promise.resolve();
@@ -260,7 +258,6 @@ Recorder.prototype.start = function(){
       .then(() => this.initialize)
       .then(() => Promise.all([this.initSourceNode(), this.initWorker()]))
       .then(() => {
-        console.log('Setting state to recording');
         this.state = "recording";
         this.encoder.postMessage({ command: 'getHeaderPages' });
         this.sourceNode.connect( this.monitorGainNode );

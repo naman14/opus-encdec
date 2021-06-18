@@ -1,9 +1,9 @@
 {
-  "name": "opus-encdec",
-  "version": "0.1.1",
-  "description": "A JavaScript library for encoding and decoding OPUS audio",
-  "homepage": "https://github.com/mmig/opus-encdec",
-  "author": "russaa",
+  "name": "symbl-opus-encdec",
+  "version": "0.1.2",
+  "description": "This is a fork of https://github.com/mmig/opus-encdec with additional enhancements to stream live Opus data. This library is meant for encoding and decoding OPUS audio.",
+  "homepage": "https://github.com/symblai/opus-encdec",
+  "author": "Symbl.ai",
   "keywords": [
     "ogg",
     "opus",
@@ -18,14 +18,15 @@
   "license": "MIT",
   "main": "src/recorder.js",
   "files": [
-    "dist/", "src/*.js"
+    "dist/",
+    "src/*.js"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/mmig/opus-encdec.git"
+    "url": "git://github.com/symblai/opus-encdec.git"
   },
   "bugs": {
-    "url": "https://github.com/mmig/opus-encdec/issues"
+    "url": "https://github.com/symblai/opus-encdec/issues"
   },
   "scripts": {
     "make": "make",

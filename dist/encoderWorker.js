@@ -2,11 +2,11 @@
 
 var OggOpusEncoder, OpusEncoderLib;
 if(typeof require === 'function'){
-  OpusEncoderLib = require('./libopus-encoder.js');
-  OggOpusEncoder = require('./oggOpusEncoder.js').OggOpusEncoder;
-} else {
-  importScripts('./libopus-encoder.js');
-  importScripts('./oggOpusEncoder.js');
+  OpusEncoderLib = require('https://symbl-sdk-cdn-bucket.storage.googleapis.com/js/ga/symbl-opus-encdec/0.1.2/dist/libopus-encoder.js');
+  OggOpusEncoder = require('https://symbl-sdk-cdn-bucket.storage.googleapis.com/js/ga/symbl-opus-encdec/0.1.2/dist/oggOpusEncoder.min.js').OggOpusEncoder;
+} else if('function' === typeof importScripts) {
+  importScripts('https://symbl-sdk-cdn-bucket.storage.googleapis.com/js/ga/symbl-opus-encdec/0.1.2/dist/libopus-encoder.js');
+  importScripts('https://symbl-sdk-cdn-bucket.storage.googleapis.com/js/ga/symbl-opus-encdec/0.1.2/dist/oggOpusEncoder.min.js');
 }
 
 // Run in AudioWorkletGlobal scope

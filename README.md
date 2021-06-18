@@ -1,157 +1,44 @@
-# [Opus JS Encoder / Decoder][0]
+# [Symbl - Opus JS Encoder / Decoder][0]
 
-[![npm](https://img.shields.io/npm/v/opus-encdec)](https://www.npmjs.com/package/opus-encdec)
-[![GitHub package.json version](https://img.shields.io/github/package-json/v/mmig/opus-encdec/master)][0]
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/emscripten-core/emscripten?color=green&label=emscripten%40latest)][1]
-[![libopus version](https://img.shields.io/badge/libopus-1.3.1-yellow)][2]
-[![speexDSP version](https://img.shields.io/badge/speexDSP-1.2.0-yellow)][3]
-
-A javascript library to encode and decode Opus (with/without Ogg container) using pure JavaScript and/or WebAssembly.
-
-> forked & modified from [chris-rudmin/opus-recorder](https://github.com/chris-rudmin/opus-recorder/commit/0aaecb06e5880b3688363a90d2725008905b23ae) _(version 8.0.3)_
-
-Main differences to [chris-rudmin/opus-recorder](https://github.com/chris-rudmin/opus-recorder):
- * provides the OPUS libraries and helper (for encoding/decoding) as separate files/modules
- * provides encoder option `rawOpus` (`boolean`): encode as _raw_ OPUS frames (instead of OGG container)
- * provides 4 file variats per library (encoder/decoder) in `dist/`:
-   * single-file JavaScript (`*.js`)
-   * minfied JavaScript (`*.min.js` + `*.min.mem`)
-   * JavaScript + WASM (`*.wasm.js` + `*.wasm.wasm`)
-   * minified JavaScript + WASM (`*.wasm.min.js` + `*.wasm.min.wasm`)
-
-> **TODO**
->  * test newly supported for `int opus_decoder_ctl ( OpusDecoder * st, OPUS_GET_PITCH( opus_int32 * pitch ) )` (`OPUS_GET_PITCH_REQUEST   4033`) for detecting voice in audio
->  * compile `recorder.js`, `decoderWorker.js` and `encoderWorker.js` into (single file) minified versions (and wasm-versions)
->  * compile UMD wrapper for `oggOpusDecoder.js` and `oggOpusEncoder.js` (& minified versions)
->  * make `examples/` work out-of-the-box again (work-around: copy `recorder.js`, `decoderWorker.js` and `encoderWorker.js` to `dist/` and/or modified `<script src="..."` tags in exmple HTML files)
-
-#### Libraries Used
-
-> `emscripten`: v2.0.14 _(compiler)_  
-> `libopus`:    v1.3.1  
-> `speexDSP`:   v1.2.0  
-
-#### Required Files
-
-The required files are in the `dist` folder:
-
-##### OPUS library files (encoder/decoder)
-
- * development version:
-   * pure JavaScript:  
-     `libopus-[encoder | decoder].js`
-   * WASM:  
-     `libopus-[encoder | decoder].wasm.js`  
-     `libopus-[encoder | decoder].wasm.wasm` _(binary file)_
- * minified version:
-   * pure JavaScript:  
-     `libopus-[encoder | decoder].min.js`  
-     `libopus-[encoder | decoder].min.mem` _(binary file)_
-   * WASM:  
-     `libopus-[encoder | decoder].wasm.min.js`
-     `libopus-[encoder | decoder].wasm.min.wasm` _(binary file)_
-
-
-**NOTE**: `recorder.js`, as well as the wrapper code `decoderWorker.js` and
-          `encoderWorker.js` are currently only (un-minified) available in
-          directory `src/`
-          (may need to be copied to `dist/` or other appropriate location, if they need to be used)
-
----------
+This library has been forked from [mmig/opus-encdec](https://github.com/mmig/opus-encdec/commit/e33ca40b92ddff8c168c7f5aca34b626c9acc08a) and modified.
 
 #### Installing
 
 Install via `npm` registry
 ```bash
-npm install opus-encdec
+npm install symbl-opus-encdec
 ```
 
 Latest from repository
 ```bash
-npm install git+https://github.com/mmig/opus-encdec.git
+npm install git+https://github.com/symblai/opus-encdec.git
 ```
 
-#### Including Dynamically Loaded libopus-encoder.js from Non-Default Location
+#### Usage
+To use this library simply include the below code snippet in the public.html
 
-Variants of the `libopus-encoder.js` library that are loaded asynchronously do usually also load some additional files.
-
-If the library-file is not loaded from the default location ("page root"), but from a sub-directory/-path, you need to
-let the library know, so that it searches for the additional files, that it needs to load, in that sub-directory/-path.
-
-For this, the path/location must be stored in the global variable `OPUS_SCRIPT_LOCATION` *before* the `libopus-encoder.js`
-library is loaded.
-If `OPUS_SCRIPT_LOCATION` is given as `string`, it specifies the path to the `libopus-encoder.js` files (see examples below), e.g.
-```javascript
-//location example as string:
-OPUS_SCRIPT_LOCATION = 'libs/';
-```
-Note, that the path/location should end with a slash (`"/"`), e.g. `'some/path/'`
-_(however, the library will try to automatically add a slash, if it is missing)_.
-
-If `OPUS_SCRIPT_LOCATION` is given as an object, it specifies mappings of the file-names to the file-paths of the `libopus-encoder.js` files (see examples below), e.g.
-```javascript
-//location example as object/mapping:
-OPUS_SCRIPT_LOCATION = {
-  'libopus-encoder.min.js.mem': 'libs/flac.mem'
-};
-```
-
-An example for specifying the path/location at `libs/` in an HTML file:
 ```html
-  <script type="text/javascript">window.OPUS_SCRIPT_LOCATION = 'libs/';</script>
-  <script src="libs/libopus-encoder.js" type="text/javascript"></script>
+  <script src="https://sdk.symbl.ai/js/ga/symbl-opus-encdec/0.1.2/dist/recorder.min.js" type="text/javascript"></script>
 ```
 
-Or example for specifying the path/location at `libs/` in a WebWorker script:
+The library loads the required asynchronous worker files from Symbl's CDN, therefore reducing the integration effort to just importing and start using the library.
+
+An example configuration and initialization is shown below
 ```javascript
-  self.OPUS_SCRIPT_LOCATION = 'libs/';
-  importScripts('libs/libopus-encoder.js');
+    const opusRecordingOptions = {
+        numberOfChannels: 1,
+        encoderSampleRate: 48000,
+        encoderFrameSize: 20,
+        maxFramesPerPage: 40,
+        encoderComplexity: 6,
+        streamPages: true,
+//      sourceNode: source, //Can be passed-in from custom streams
+        rawOpus: true
+    };
+
+    opusEncoder = new window.Recorder(opusRecordingOptions);
 ```
 
-Or example for specifying the path/location at `libs/` in Node.js script:
-```javascript
-  process.env.OPUS_SCRIPT_LOCATION = './libs/';
-  var Flac = require('./libs/libopus-encoder.js');
-```
-
-Example for specifying custom path and file-name via mapping (`originalFileName -> <newPath/newFileName>`):  
-in this case, the file-name(s) of the additionally required files (e.g. `*.mem` or `.wasm` files)
-need to be mapped to the custom path/file-name(s), that is,
-for all the required files of the used library variant (see details below).
-```javascript
-  self.OPUS_SCRIPT_LOCATION = {
-    'libopus-encoder.min.js.mem': 'libs/libopus-encoder.mem'
-    // or for wasm:
-    //'libopus-encoder.wasm.wasm': 'libs/libopus-encoder.wasm'
-  };
-  importScripts('libs/libopus-encoder.min.js');
-  // or for wasm:
-  // importScripts('libs/libopus-encoder.wasm.js');
-```
-
----------
-
- _OLD DOCUMENTATION: (caution: may be outdated/obsolete)_
-
----------
-
-### Usage `recorder.js`
-
-
-#### Constructor
-
-The `Recorder` object is available in the global namespace and supports CommonJS and AMD imports.
-
-```js
-var rec = new Recorder([config]);
-```
-
-Creates a recorder instance.
-
-- **config** - An optional configuration object.
-
-
----------
 #### General Config options
 
 - **bufferLength**                - (*optional*) The length of the buffer that the scriptProcessorNode uses to capture the audio. Defaults to `4096`.
@@ -175,8 +62,6 @@ Creates a recorder instance.
 - **resampleQuality**             - (*optional*) Value between 0 and 10 which determines latency and processing for resampling. `0` is fastest with lowest quality. `10` is slowest with highest quality. Defaults to `3`.
 - **streamPages**                 - (*optional*) `dataAvailable` event will fire after each encoded page. Defaults to `false`.
 - **rawOpus**                     - (*optional*) `rawOpus` encode as _raw_ OPUS (instead of OGG container) frames. Defaults to `false`.
-
-
 
 #### Config options for WAV recorder
 
@@ -291,39 +176,11 @@ rec.onstop()
 A callback which occurs when media recording ends.
 
 ---------
-### Getting started with webpack
-- To use in a web-app built with webpack, be sure to load the worker files as a chunk. This can be done with file-loader plugin.
-
-Add to your webpack.config.js before all other loaders.
-```js
-module.exports = {
-  module: {
-    rules: [
-      {
-        test: /encoderWorker\.min\.js$/,
-        use: [{ loader: 'file-loader' }]
-      }
-    ]
-  }
-};
-```
-
-Then get the encoderPath using an import
-```js
-import Recorder from 'opus-encdec';
-import encoderPath from 'opus-encdec/dist/encoderWorker.min.js';
-
-const rec = new Recorder({ encoderPath });
-```
-
-
----------
 ### Gotchas
 - To be able to read the mic stream, the page must be served over https. Use ngrok for local development with https.
 - All browsers require that `rec.start()` to be called from a user initiated event. In iOS and macOS Safari, the mic stream will be empty with no logged errors. In Chrome and Firefox the audioContext could be suspended.
 - macOS and iOS Safari native opus playback is not yet supported
 - The worker files need to be hosted on the same domain as the page recording as cross-domain workers and worklets are not supported.
-
 
 ---------
 ### Browser Support
@@ -388,7 +245,7 @@ Clean the dist folder and git submodules:
 make clean
 ```
 
-[0]: https://github.com/mmig/opus-encdec
+[0]: https://github.com/symblai/opus-encdec
 [1]: https://github.com/kripken/emscripten
 [2]: https://opus-codec.org/downloads/
 [3]: https://www.speex.org/downloads/
