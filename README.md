@@ -38,6 +38,7 @@ An example configuration and initialization is shown below
 
     opusEncoder = new window.Recorder(opusRecordingOptions);
 ```
+Optionally, this library can also be used as a dependency and the recorder can be imported directly. The requried worker files will be loaded via Symbl's CDN/
 
 #### General Config options
 
