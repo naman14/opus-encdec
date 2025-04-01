@@ -19,7 +19,7 @@ var Recorder = function( config = {} ){
     bufferLength: 4096,
     encoderApplication: 2049,
     encoderFrameSize: 20,
-    encoderPath: 'https://symbl-sdk-cdn-bucket.storage.googleapis.com/js/ga/symbl-opus-encdec/0.1.2/dist/encoderWorker.min.js',
+    encoderPath: 'https://cdn.jsdelivr.net/gh/naman14/opus-encdec@master/dist/encoderWorker.min.js',
     encoderSampleRate: 48000,
     maxFramesPerPage: 40,
     mediaTrackConstraints: true,
